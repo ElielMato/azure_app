@@ -21,8 +21,8 @@ jobs:
       uses: azure/docker-login@v2
       with:
         login-server: ${{ secrets.ACR_NAME_URL }}
-        username: ${{ secrets.REGISTRY_USERNAME }}
-        password: ${{ secrets.REGISTRY_PASSWORD }}
+        username: ${{ secrets.REGISTER_USERNAME }}
+        password: ${{ secrets.REGISTER_PASSWORD }}
     - run: |
         docker build . -t ${{ secrets.ACR_NAME_URL }}/${{env.REPO_NAME}}:${{ github.sha }}
         docker push ${{ secrets.ACR_NAME_URL }}/${{env.REPO_NAME}}:${{ github.sha }}
@@ -47,8 +47,8 @@ jobs:
         resource-group: ${{ secrets.AZURE_RESOURCE_GROUP }}
         image: ${{ secrets.ACR_NAME_URL }}/${{env.REPO_NAME}}:${{ github.sha }}
         dns-name-label: flask-estructura-${{ github.run_id }}-${{ github.run_attempt }}
-        registry-username: ${{ secrets.REGISTRY_USERNAME }}
-        registry-password: ${{ secrets.REGISTRY_PASSWORD }}
+        REGISTER-username: ${{ secrets.REGISTER_USERNAME }}
+        REGISTER-password: ${{ secrets.REGISTER_PASSWORD }}
         ports: 5000
         cpu: 1
         memory: 1
