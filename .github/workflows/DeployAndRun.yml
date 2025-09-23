@@ -43,10 +43,10 @@ jobs:
       uses: azure/aci-deploy@v1
       with:
         location: eastus
-        name: azure-app
+        name: azureapp
         resource-group: ${{ secrets.AZURE_RESOURCE_GROUP }}
         image: ${{ secrets.ACR_NAME_URL }}/${{env.REPO_NAME}}:${{ github.sha }}
-        dns-name-label: azure-app-${{ github.run_id }}-${{ github.run_attempt }}
+        dns-name-label: azureapp-${{ github.run_id }}-${{ github.run_attempt }}
         registry-username: ${{ secrets.REGISTRY_USERNAME }}
         registry-password: ${{ secrets.REGISTRY_PASSWORD }}
         ports: 8080
