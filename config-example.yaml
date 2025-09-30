@@ -10,8 +10,6 @@ app:
   debug: true
 
 azure:
-  storage_account: "mystorageaccount"
-  container_name: "mycontainer"
   connection_string: "DefaultEndpointsProtocol=https;AccountName=..."
 
 logging:
