@@ -12,27 +12,11 @@ import (
 )
 
 type Config struct {
-	Server struct {
-		Host string `mapstructure:"host"`
-		Port int    `mapstructure:"port"`
-		Mode string `mapstructure:"mode"`
-	} `mapstructure:"server"`
-
-	App struct {
-		Name        string `mapstructure:"name"`
-		Version     string `mapstructure:"version"`
-		Environment string `mapstructure:"environment"`
-		Debug       bool   `mapstructure:"debug"`
-	} `mapstructure:"app"`
-
-	Azure struct {
-		ConnectionString string `mapstructure:"connection_string"`
-	} `mapstructure:"azure"`
-	
-	Logging struct {
-		Level  string `mapstructure:"level"`
-		Format string `mapstructure:"format"`
-	} `mapstructure:"logging"`
+	Name        string `mapstructure:"app-name"`
+	Version     string `mapstructure:"app-version"`
+	ConnectionString string `mapstructure:"azure-connection-string"`
+	Level  string `mapstructure:"logging-level"`
+	Format string `mapstructure:"logging-format"`
 }
 
 var config Config
@@ -51,12 +35,12 @@ func parseInstrumentationKey(connectionString string) string {
 
 // initTelemetry configura Application Insights
 func initTelemetry() {
-	if config.Azure.ConnectionString == "" {
+	if config.ConnectionString == "" {
 		log.Println("Warning: Azure connection string no configurado, telemetría no se inicializará")
 		return
 	}
 
-	instrumentationKey := parseInstrumentationKey(config.Azure.ConnectionString)
+	instrumentationKey := parseInstrumentationKey(config.ConnectionString)
 	if instrumentationKey == "" {
 		log.Println("Warning: No se pudo extraer InstrumentationKey del connection string")
 		return
@@ -86,7 +70,7 @@ func loadConfig() {
 		log.Fatalf("Error mapeando configuración: %v", err)
 	}
 	
-	log.Printf("Configuración cargada: %s v%s", config.App.Name, config.App.Version)
+	log.Printf("Configuración cargada: %s v%s", config.Name, config.Version)
 }
 
 func main() {
@@ -95,7 +79,7 @@ func main() {
 	// Inicializar telemetría de Application Insights
 	initTelemetry()
 	
-	gin.SetMode(config.Server.Mode)
+	// gin.SetMode(config.Server.Mode)
 	
 	r := gin.Default()
 	
@@ -118,7 +102,7 @@ func main() {
 			
 			request.Properties["route"] = c.FullPath()
 			request.Properties["user_agent"] = c.Request.UserAgent()
-			request.Properties["app_version"] = config.App.Version
+			request.Properties["app_version"] = config.Version
 			
 			telemetryClient.Track(request)
 		}
@@ -132,9 +116,8 @@ func main() {
 			// Enviar telemetría personalizada
 			if telemetryClient != nil {
 				event := appinsights.NewEventTelemetry("hello_endpoint_called")
-				event.Properties["app_name"] = config.App.Name
-				event.Properties["version"] = config.App.Version
-				event.Properties["environment"] = config.App.Environment
+				event.Properties["app_name"] = config.Name
+				event.Properties["version"] = config.Version
 				telemetryClient.Track(event)
 			}
 			
@@ -143,15 +126,13 @@ func main() {
 			
 			response := gin.H{
 				"message":     "Ok",
-				"app_name":    config.App.Name,
-				"version":     config.App.Version,
-				"environment": config.App.Environment,
+				"app_name":    config.Name,
+				"version":     config.Version,
 				"timestamp":   time.Now().Unix(),
 			}
 			
 			c.JSON(200, response)
 			
-			// Enviar métrica personalizada
 			if telemetryClient != nil {
 				duration := time.Since(start)
 				metric := appinsights.NewMetricTelemetry("hello_response_time", duration.Seconds())
@@ -160,38 +141,30 @@ func main() {
 			}
 		})
 		
-		if config.App.Environment == "development" {
-			v1.GET("/config", func(c *gin.Context) {
-				if telemetryClient != nil {
-					event := appinsights.NewEventTelemetry("config_endpoint_accessed")
-					event.Properties["debug_mode"] = "true"
-					telemetryClient.Track(event)
-				}
-				
-				response := gin.H{
-					"server": gin.H{
-						"host": config.Server.Host,
-						"port": config.Server.Port,
-						"mode": config.Server.Mode,
-					},
-					"app": gin.H{
-						"name":        config.App.Name,
-						"version":     config.App.Version,
-						"environment": config.App.Environment,
-						"debug":       config.App.Debug,
-					},
-					"telemetry": gin.H{
-						"enabled":             config.Azure.ConnectionString != "",
-						"instrumentation_key": parseInstrumentationKey(config.Azure.ConnectionString),
-					},
-				}
-				
-				c.JSON(200, response)
-			})
-		}
+		v1.GET("/config", func(c *gin.Context) {
+			if telemetryClient != nil {
+				event := appinsights.NewEventTelemetry("config_endpoint_accessed")
+				event.Properties["debug_mode"] = "true"
+				telemetryClient.Track(event)
+			}
+			
+			response := gin.H{
+				"app": gin.H{
+					"name":        config.Name,
+					"version":     config.Version,
+				},
+				"telemetry": gin.H{
+					"enabled":             config.ConnectionString != "",
+					"instrumentation_key": parseInstrumentationKey(config.ConnectionString),
+				},
+			}
+			
+			c.JSON(200, response)
+		})
+		
 	}
-	
-	address := fmt.Sprintf("%s:%d", config.Server.Host, config.Server.Port)
+
+	address := fmt.Sprintf("%s:%d", "0.0.0.0", 8080)
 	log.Printf("Servidor iniciado en %s con Application Insights habilitado", address)
 	r.Run(address)
 }
