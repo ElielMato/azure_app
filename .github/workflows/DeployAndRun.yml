@@ -1,8 +1,12 @@
 name: Deploy and Run
 env:
   REPO_NAME: ${{ github.event.repository.name }}
+  IMAGE_TAG: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || github.sha }}
 on:
   workflow_dispatch:
+  push:
+    tags:
+      - 'v*.*.*'
 permissions:
   id-token: write
   contents: read
@@ -15,8 +19,8 @@ jobs:
         shell: bash
     steps:
     - name: 'Checkout GitHub Action'
-      uses: actions/checkout@v4
-     
+      uses: actions/checkout@v5
+
     - name: 'Login via Docker'
       uses: azure/docker-login@v2
       with:
@@ -24,9 +28,9 @@ jobs:
         username: ${{ secrets.REGISTRY_USERNAME }}
         password: ${{ secrets.REGISTRY_PASSWORD }}
     - run: |
-        docker build . -t ${{ secrets.ACR_NAME_URL }}/${{env.REPO_NAME}}:${{ github.sha }}
-        docker push ${{ secrets.ACR_NAME_URL }}/${{env.REPO_NAME}}:${{ github.sha }}
-
+        docker build . -t ${{ secrets.ACR_NAME_URL }}/${{env.REPO_NAME}}:${{ env.IMAGE_TAG }}
+        docker push ${{ secrets.ACR_NAME_URL }}/${{env.REPO_NAME}}:${{ env.IMAGE_TAG }}
+      
   deploy:
     needs: build
     runs-on: ubuntu-latest
@@ -43,15 +47,15 @@ jobs:
       uses: azure/aci-deploy@v1
       with:
         location: brazilsouth
-        name: azure-app
+        name: azure-app-${{ env.IMAGE_TAG }}
         resource-group: ${{ secrets.AZURE_RESOURCE_GROUP }}
-        image: ${{ secrets.ACR_NAME_URL }}/${{env.REPO_NAME}}:${{ github.sha }}
+        image: ${{ secrets.ACR_NAME_URL }}/${{env.REPO_NAME}}:${{ env.IMAGE_TAG }}
         dns-name-label: azure-app-${{ github.run_id }}-${{ github.run_attempt }}
         registry-username: ${{ secrets.REGISTRY_USERNAME }}
         registry-password: ${{ secrets.REGISTRY_PASSWORD }}
         ports: 8080
-        cpu: 1
-        memory: 1
+        cpu: 0.25
+        memory: 0.5
     
     - name: 'logout'
       run: |
