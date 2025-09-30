@@ -47,7 +47,7 @@ jobs:
       uses: azure/aci-deploy@v1
       with:
         location: brazilsouth
-        name: azure-app-${{ env.IMAGE_TAG }}
+        name: azure-app
         resource-group: ${{ secrets.AZURE_RESOURCE_GROUP }}
         image: ${{ secrets.ACR_NAME_URL }}/${{env.REPO_NAME}}:${{ env.IMAGE_TAG }}
         dns-name-label: azure-app-${{ github.run_id }}-${{ github.run_attempt }}
