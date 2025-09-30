@@ -1,0 +1,19 @@
+server:
+  host: "localhost"
+  port: 8080
+  mode: "debug" # debug, release, test
+
+app:
+  name: "Azure Go App"
+  version: "1.0.0"
+  environment: "development"
+  debug: true
+
+azure:
+  storage_account: "mystorageaccount"
+  container_name: "mycontainer"
+  connection_string: "DefaultEndpointsProtocol=https;AccountName=..."
+
+logging:
+  level: "info" # debug, info, warn, error
+  format: "json" # json, text
