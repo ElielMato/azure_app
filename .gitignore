@@ -39,4 +39,3 @@ pychache/
 *.code-workspace
 azure_app.code-workspace
 config.yml
-*.yml
